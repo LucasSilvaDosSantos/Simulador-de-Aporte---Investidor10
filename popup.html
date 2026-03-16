@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Aporte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --surface: #151820;
+      --surface2: #1c2030;
+      --border: #252a38;
+      --accent: #00e5a0;
+      --accent-dim: #00e5a020;
+      --accent2: #4f8eff;
+      --warn: #ffb830;
+      --danger: #ff5757;
+      --text: #e8ecf4;
+      --muted: #6b7494;
+      --muted2: #3d4560;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      width: 500px;
+      min-height: 200px;
+      overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+    }
+    .logo {
+      width: 30px; height: 30px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .header-info h1 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    .header-info p {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Input ── */
+    .input-section {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .input-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .input-row { display: flex; gap: 8px; }
+    .input-wrap { flex: 1; position: relative; }
+    .currency-prefix {
+      position: absolute;
+      left: 10px; top: 50%;
+      transform: translateY(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 9px 10px 9px 30px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="number"]:focus { border-color: var(--accent); }
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .btn-step {
+      padding: 9px 11px;
+      background: var(--surface2);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-step:hover { background: var(--border); border-color: var(--muted2); }
+    .btn-step:active { transform: scale(0.96); }
+    #btn-minus { color: var(--danger); border-color: #ff575730; }
+    #btn-minus:hover { background: #ff575715; border-color: var(--danger); }
+    #btn-plus  { color: var(--accent); border-color: #00e5a030; }
+    #btn-plus:hover  { background: #00e5a015; border-color: var(--accent); }
+    .btn-calcular {
+      padding: 9px 20px;
+      background: #00e5a0 !important;
+      color: #000000 !important;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      border: 2px solid #00e5a0 !important;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      outline: none;
+    }
+    .btn-calcular:hover { background: #00cc8e !important; border-color: #00cc8e !important; }
+    .btn-calcular:active { transform: scale(0.97); }
+
+    /* ── Status ── */
+    .status {
+      padding: 14px 18px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status.erro { color: var(--danger); }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Resumo ── */
+    .resumo {
+      display: none;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .resumo.visible { display: flex; }
+    .resumo-card {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-width: 0;
+    }
+    .resumo-card .label {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 3px;
+      white-space: nowrap;
+    }
+    .resumo-card .value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .resumo-card .value.warn { color: var(--warn); }
+
+    /* ── Card Equilíbrio ── */
+    .equilibrio-card {
+      margin: 0 18px 12px;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid #4f8eff30;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .equilibrio-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .equilibrio-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent2);
+      white-space: nowrap;
+    }
+
+    /* ── Tabela ── */
+    .tabela-section {
+      display: none;
+      padding: 0 12px 16px;
+    }
+    .tabela-section.visible { display: block; }
+
+    /* Colunas: Ativo | Comprar | Preço | %Atual | %Ideal | Alocado */
+    .tabela-header,
+    .ativo-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1.2fr 1fr 0.8fr 0.8fr 1fr;
+      gap: 0;
+      align-items: center;
+    }
+
+    .tabela-header {
+      padding: 8px 4px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tabela-header span {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      text-align: right;
+      padding: 0 3px;
+    }
+    .tabela-header span:first-child { text-align: left; padding-left: 4px; }
+
+    .ativo-row {
+      padding: 8px 4px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+      animation: fadeIn 0.3s ease both;
+    }
+    .ativo-row:hover { background: var(--surface2); border-radius: 6px; }
+    .ativo-row:last-child { border-bottom: none; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .cell {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-align: right;
+      color: var(--text);
+      padding: 0 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cell.ticker {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      text-align: left;
+      padding-left: 4px;
+    }
+    .cell.comprar {
+      text-align: left;
+      padding-left: 3px;
+    }
+    .cell.cotas-valor {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .cell.cotas-valor.zero { color: var(--muted2); }
+
+    .deficit-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 3px;
+      overflow: hidden;
+      max-width: 90px;
+    }
+    .deficit-fill {
+      height: 100%;
+      background: var(--accent2);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-top: 2px;
+    }
+    .badge.top {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    .empty {
+      padding: 24px 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .empty .icon { font-size: 28px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">📊</div>
+    <div class="header-info">
+      <h1>Simulador de Aporte</h1>
+      <p id="qtd-ativos">Carregando carteira...</p>
+    </div>
+  </div>
+
+  <div id="status-area" class="status">
+    <div class="spinner"></div>
+    <span>Lendo dados da carteira...</span>
+  </div>
+
+  <div class="input-section" id="input-section" style="display:none">
+    <div class="input-label">Valor do aporte</div>
+    <div class="input-row">
+      <div class="input-wrap">
+        <span class="currency-prefix">R$</span>
+        <input type="number" id="aporte" placeholder="0,00" min="0" step="0.01" />
+      </div>
+      <button class="btn-step" id="btn-minus" title="Diminuir R$ 500">−500</button>
+      <button class="btn-step" id="btn-plus"  title="Aumentar R$ 500">+500</button>
+      <button class="btn-calcular" id="btn-calcular" style="background:#00e5a0;color:#000;border:none;">Calcular</button>
+    </div>
+  </div>
+
+  <div class="resumo" id="resumo">
+    <div class="resumo-card">
+      <div class="label">Aporte</div>
+      <div class="value" id="res-aporte">—</div>
+    </div>
+    <div class="resumo-card">
+      <div class="label">Investido</div>
+      <div class="value" id="res-investido">—</div>
+    </div>
+    <div class="resumo-card">
+      <div class="label">Sobra</div>
+      <div class="value warn" id="res-sobra">—</div>
+    </div>
+    <div class="resumo-card">
+      <div class="label">Ativos</div>
+      <div class="value" id="res-ativos">—</div>
+    </div>
+  </div>
+
+  <div class="equilibrio-card" id="equilibrio-card" style="display:none">
+    <div class="equilibrio-label">⚖️ Para equilibrar a carteira (diferença &lt; 2%)</div>
+    <div class="equilibrio-value" id="equilibrio-valor">—</div>
+  </div>
+
+  <div class="tabela-section" id="tabela-section">
+    <div class="tabela-header">
+      <span>Ativo</span>
+      <span style="text-align:left;padding-left:4px">Comprar</span>
+      <span>Preço</span>
+      <span>% Atual</span>
+      <span>% Ideal</span>
+      <span>Alocado</span>
+    </div>
+    <div id="tabela-body"></div>
+  </div>
+
+  <div id="empty-area" class="empty" style="display:none">
+    <div class="icon">📭</div>
+    <div>Nenhum ativo encontrado.<br>Abra a página de carteira no Investidor10.</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
