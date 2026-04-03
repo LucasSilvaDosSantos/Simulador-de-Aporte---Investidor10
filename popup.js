@@ -45,12 +45,9 @@ function extrairCarteiraInPage() {
       const qtdTexto = tds[1].innerText?.trim() ?? '0';
       const quantidade = parseFloat(qtdTexto.replace(/\./g, '').replace(',', '.')) || 0;
 
-      // ── Preço Atual ──
-      // Busca o primeiro td que contenha "R$" com .show-sensitive-content (preço atual)
-      // Ações: td[3], FIIs: td[3], BDR: td[3], ETF: td[3]
-      // Tesouro não tem preço atual unitário — usamos o Saldo dividido pela qtd
+      // ── Preço Atual ── sempre td[3] (td[2] é preço médio, ignorar)
       let preco = NaN;
-      for (let i = 2; i < tds.length; i++) {
+      for (let i = 3; i < tds.length; i++) {
         const txt = tds[i].innerText?.trim() ?? '';
         // Preço atual: célula com "R$" e valor numérico simples (não é saldo grande)
         // Evita pegar a coluna de saldo (valor muito alto)
@@ -63,9 +60,9 @@ function extrairCarteiraInPage() {
         }
       }
 
-      // Tesouro: não tem coluna de preço unitário — calcula pelo saldo
+      // Tesouro: não tem preço unitário — calcula pelo saldo
       if (isNaN(preco) && quantidade > 0) {
-        for (let i = 2; i < tds.length; i++) {
+        for (let i = 3; i < tds.length; i++) {
           const txt = tds[i].innerText?.trim() ?? '';
           if (txt.startsWith('R$') || txt.includes('R$\u00a0')) {
             const val = parseBRL(txt);
