@@ -30,6 +30,34 @@ function extrairCarteiraInPage() {
     );
   }
 
+  // Normaliza texto de cabeçalho: "Preço Atual" → "preco atual"
+  function normalizar(texto) {
+    return (texto || '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  // Descobre o índice da coluna "Preço Atual" pelo cabeçalho da própria tabela.
+  // Cada classe de ativo (Ações, FIIs, ETFs...) tem sua tabela e a ordem das colunas
+  // pode variar, então não dá para confiar em posição fixa.
+  const cacheColunas = new Map();
+  function indiceColunaPrecoAtual(tr) {
+    const tabela = tr.closest('table');
+    if (!tabela) return -1;
+    if (cacheColunas.has(tabela)) return cacheColunas.get(tabela);
+
+    const ths = Array.from(tabela.querySelectorAll('thead th'));
+    const nomes = ths.map((th) => normalizar(th.innerText));
+    const idx = nomes.findIndex((n) => n.includes('preco atual') || n.includes('cotacao'));
+    console.log('[I10-Ext] Colunas da tabela:', nomes, '→ preço atual em', idx);
+
+    cacheColunas.set(tabela, idx);
+    return idx;
+  }
+
   const ativos = [];
 
   linhas.forEach((tr) => {
@@ -45,9 +73,16 @@ function extrairCarteiraInPage() {
       const qtdTexto = tds[1].innerText?.trim() ?? '0';
       const quantidade = parseFloat(qtdTexto.replace(/\./g, '').replace(',', '.')) || 0;
 
-      // ── Preço Atual ── sempre td[3] (td[2] é preço médio, ignorar)
+      // ── Preço Atual ── localizado pelo cabeçalho "Preço Atual"
       let preco = NaN;
-      for (let i = 3; i < tds.length; i++) {
+      const idxPreco = indiceColunaPrecoAtual(tr);
+      if (idxPreco >= 0 && tds[idxPreco]) {
+        const val = parseBRL(tds[idxPreco].innerText);
+        if (!isNaN(val) && val > 0) preco = val;
+      }
+
+      // Fallback (cabeçalho não encontrado): primeira célula "R$" a partir de td[3]
+      for (let i = 3; isNaN(preco) && i < tds.length; i++) {
         const txt = tds[i].innerText?.trim() ?? '';
         // Preço atual: célula com "R$" e valor numérico simples (não é saldo grande)
         // Evita pegar a coluna de saldo (valor muito alto)
